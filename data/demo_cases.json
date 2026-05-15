@@ -1,0 +1,86 @@
+[
+  {
+    "name": "套餐太贵想携转",
+    "phone": "13800138001",
+    "complaint": "我这个套餐越来越贵，别人新用户比我便宜多了，不行我就携号转网了。",
+    "profile": {
+      "monthly_fee": 129,
+      "customer_type": "存量",
+      "tenure_years": 6,
+      "has_broadband": true,
+      "wants_device": false,
+      "family_mobile_count": 3,
+      "wants_port_out": true
+    }
+  },
+  {
+    "name": "流量不够刷视频",
+    "phone": "13800138002",
+    "complaint": "最近刷视频流量总是不够，月底老是提醒超量，我又不想套餐涨太多。",
+    "profile": {
+      "monthly_fee": 39,
+      "customer_type": "存量",
+      "tenure_years": 2,
+      "has_broadband": false,
+      "wants_device": false,
+      "family_mobile_count": 1,
+      "wants_port_out": false
+    }
+  },
+  {
+    "name": "宽带/WiFi网速差",
+    "phone": "13800138003",
+    "complaint": "家里宽带晚上特别卡，WiFi到卧室就没信号，孩子上网课经常断。",
+    "profile": {
+      "monthly_fee": 129,
+      "customer_type": "家庭用户",
+      "tenure_years": 3,
+      "has_broadband": true,
+      "wants_device": false,
+      "family_mobile_count": 4,
+      "wants_port_out": false
+    }
+  },
+  {
+    "name": "想换手机但觉得贵",
+    "phone": "13800138004",
+    "complaint": "手机用了三四年想换新机，但一次性买太贵，别家说有购机优惠，你们有没有类似方案？",
+    "profile": {
+      "monthly_fee": 89,
+      "customer_type": "存量",
+      "tenure_years": 4,
+      "has_broadband": false,
+      "wants_device": true,
+      "family_mobile_count": 1,
+      "wants_port_out": true
+    }
+  },
+  {
+    "name": "家庭号码多想省钱",
+    "phone": "13800138005",
+    "complaint": "我们家好几个移动号码，老人孩子都在用，想看看有没有家庭一起办更省钱的方案。",
+    "profile": {
+      "monthly_fee": 59,
+      "customer_type": "家庭用户",
+      "tenure_years": 5,
+      "has_broadband": false,
+      "wants_device": false,
+      "family_mobile_count": 5,
+      "wants_port_out": false
+    }
+  },
+  {
+    "name": "商户需要宽带和宣传触达",
+    "phone": "13800138006",
+    "complaint": "我开了一家门店，需要稳定宽带，也想做门店宣传和客户触达，最好还能有工作号码和监控方案。",
+    "profile": {
+      "monthly_fee": 199,
+      "customer_type": "商客",
+      "tenure_years": 2,
+      "has_broadband": false,
+      "wants_device": false,
+      "family_mobile_count": 1,
+      "wants_port_out": false
+    }
+  }
+]
