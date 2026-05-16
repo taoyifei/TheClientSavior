@@ -3,4 +3,3 @@ uvicorn[standard]
 pydantic
 python-dotenv
 openai
-streamlit>=1.50.0
