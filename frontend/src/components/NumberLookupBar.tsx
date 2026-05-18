@@ -35,7 +35,7 @@ export default function NumberLookupBar({
       <div>
         <div className="command-title">号码查询</div>
         <div className="command-subtitle">
-          输入客户手机号，带出本地演示画像；手机号仅用于本地看板，不传入模型。
+          输入客户手机号，优先查询本地演示画像；若本次已处理过，将从风险看板记录回填画像。手机号仅用于本地看板，不传入模型。
         </div>
       </div>
       <div className="lookup-row">

@@ -31,6 +31,7 @@ export type DemoCase = {
 export type Customer = {
   phone_masked: string;
   customer_name?: string;
+  source?: "static_customer" | "dashboard_history" | string;
   monthly_fee: number;
   customer_type: string;
   tenure_years: number;
@@ -39,17 +40,22 @@ export type Customer = {
   family_mobile_count: number;
   wants_port_out: boolean;
   plan_name?: string;
-  plan_data_gb?: number;
-  last_month_usage_gb?: number;
-  overage_fee?: number;
+  plan_data_gb?: number | null;
+  last_month_usage_gb?: number | null;
+  overage_fee?: number | null;
   recent_complaint_count?: number;
   recommended_hint?: string;
+  last_complaint_summary?: string;
+  last_risk_level?: string;
+  last_top_business?: string;
+  last_status?: string;
 };
 
 export type CustomerLookupResponse = {
   found: boolean;
   customer: Customer | null;
   message: string;
+  source: "static_customer" | "dashboard_history" | "none" | string;
 };
 
 export type CustomerAnalysis = {

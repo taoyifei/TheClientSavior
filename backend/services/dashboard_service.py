@@ -25,7 +25,7 @@ CSV_COLUMNS = [
     "手机号",
     "风险等级",
     "跟进优先级",
-    "是否超耗",
+    "是否超套",
     "推荐业务",
     "投诉类型",
     "客户情绪",
@@ -87,9 +87,11 @@ def add_record(
     _RECORDS.append(
         {
             "sequence": sequence,
-            "generated_at": datetime.now().strftime("%H:%M:%S"),
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "phone_masked": phone_masked,
             "_raw_phone": phone,
+            "_profile": dict(profile),
+            "_complaint": complaint[:200],
             "complaint_type": complaint_type,
             "risk_level": risk_level,
             "_risk_score": risk_score(risk_level),
@@ -180,7 +182,7 @@ def export_csv() -> bytes:
                 "手机号": record["phone_masked"],
                 "风险等级": record["risk_level"],
                 "跟进优先级": record["follow_priority"],
-                "是否超耗": record["overage_label"],
+                "是否超套": record["overage_label"],
                 "推荐业务": record["top_business"],
                 "投诉类型": record["complaint_type"],
                 "客户情绪": record["emotion"],
@@ -204,4 +206,97 @@ def _public_record(record: dict[str, object]) -> dict[str, object]:
     public = dict(record)
     public.pop("_raw_phone", None)
     public.pop("_risk_score", None)
+    public.pop("_profile", None)
+    public.pop("_complaint", None)
     return public
+
+
+def find_latest_record_by_phone(phone: str) -> dict[str, object] | None:
+    """根据完整手机号查询本次风险队列中的最近一条处理记录。
+
+    Args:
+        phone: 标准化或原始手机号。
+
+    Returns:
+        最近一条内部记录；未命中时返回 None。
+    """
+
+    normalized_phone = _normalize_phone(phone)
+    if not normalized_phone:
+        return None
+    for record in reversed(_RECORDS):
+        if _normalize_phone(record.get("_raw_phone")) == normalized_phone:
+            return dict(record)
+    return None
+
+
+def build_customer_view_from_record(record: dict[str, object]) -> dict[str, object]:
+    """把风险队列历史记录转换成前端 Customer 结构。
+
+    Args:
+        record: 内部风险队列记录。
+
+    Returns:
+        不含完整手机号的客户画像视图。
+    """
+
+    profile = record.get("_profile")
+    if not isinstance(profile, dict):
+        profile = {}
+    phone_masked = str(record.get("phone_masked", "未填写"))
+    raw_phone = _normalize_phone(record.get("_raw_phone"))
+    recent_count = sum(
+        1
+        for item in _RECORDS
+        if raw_phone and _normalize_phone(item.get("_raw_phone")) == raw_phone
+    )
+    complaint_type = str(record.get("complaint_type", "其他"))
+    top_business = str(record.get("top_business", ""))
+    return {
+        "phone_masked": phone_masked,
+        "customer_name": "本次处理客户",
+        "monthly_fee": _as_int(profile.get("monthly_fee"), 0),
+        "customer_type": str(profile.get("customer_type", "存量")),
+        "tenure_years": _as_float(profile.get("tenure_years"), 0),
+        "has_broadband": bool(profile.get("has_broadband", False)),
+        "wants_device": bool(profile.get("wants_device", False)),
+        "family_mobile_count": _as_int(profile.get("family_mobile_count"), 1),
+        "wants_port_out": bool(profile.get("wants_port_out", False)),
+        "plan_name": "",
+        "plan_data_gb": None,
+        "last_month_usage_gb": None,
+        "overage_fee": None,
+        "recent_complaint_count": recent_count,
+        "recommended_hint": f"本次看板记录：{complaint_type}，首推 {top_business}",
+        "source": "dashboard_history",
+        "last_complaint_summary": str(record.get("complaint_summary", "")),
+        "last_risk_level": str(record.get("risk_level", "")),
+        "last_top_business": top_business,
+        "last_status": str(record.get("status", "")),
+    }
+
+
+def _normalize_phone(raw: object) -> str:
+    """标准化手机号，仅用于后端内存匹配。"""
+
+    if raw is None:
+        return ""
+    return str(raw).replace(" ", "").replace("-", "").strip()
+
+
+def _as_int(value: object, default: int) -> int:
+    """安全转换为整数。"""
+
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_float(value: object, default: float) -> float:
+    """安全转换为浮点数。"""
+
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default

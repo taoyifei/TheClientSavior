@@ -1,4 +1,4 @@
-import type { AgentResult, Customer, DecisionSummary as Summary } from "../api/types";
+﻿import type { AgentResult, Customer, DecisionSummary as Summary } from "../api/types";
 
 type DecisionSummaryProps = {
   result: AgentResult | null;
@@ -8,17 +8,17 @@ type DecisionSummaryProps = {
 
 function fallbackSummary(customer: Customer | null, complaint: string): Summary {
   const hasUsage =
-    customer?.plan_data_gb !== undefined &&
-    customer?.last_month_usage_gb !== undefined;
+    customer?.plan_data_gb != null &&
+    customer?.last_month_usage_gb != null;
   const usageOver =
     hasUsage && Number(customer?.last_month_usage_gb) > Number(customer?.plan_data_gb);
-  const suspiciousWords = ["超量", "超耗", "流量不够", "月底提醒", "扣费", "流量费"];
+  const suspiciousWords = ["超量", "超套", "流量不够", "月底提醒", "扣费", "流量费"];
   const suspicious = suspiciousWords.some((word) => complaint.includes(word));
   const status = usageOver ? "是" : suspicious ? "疑似" : hasUsage ? "否" : "未知";
   const labelMap: Record<string, string> = {
-    是: "已超耗",
-    疑似: "疑似超耗",
-    否: "未发现超耗",
+    是: "已超套",
+    疑似: "疑似超套",
+    否: "未发现超套",
     未知: "暂无数据"
   };
   return {
@@ -34,7 +34,7 @@ function fallbackSummary(customer: Customer | null, complaint: string): Summary 
         ? `上月${customer?.last_month_usage_gb}G / 套餐${customer?.plan_data_gb}G`
         : "暂无用量",
       fee_text:
-        customer?.overage_fee !== undefined ? `超耗费用${customer.overage_fee}元` : ""
+        customer?.overage_fee != null ? `超套费用${customer.overage_fee}元` : ""
     },
     top_business: {
       title: "待生成",
@@ -53,9 +53,9 @@ function fallbackSummary(customer: Customer | null, complaint: string): Summary 
 }
 
 function toneByValue(value: string) {
-  if (["高", "P1", "已超耗"].includes(value)) return "danger";
-  if (["中", "P2", "疑似超耗"].includes(value)) return "warning";
-  if (["低", "P3", "未发现超耗"].includes(value)) return "success";
+  if (["高", "P1", "已超套"].includes(value)) return "danger";
+  if (["中", "P2", "疑似超套"].includes(value)) return "warning";
+  if (["低", "P3", "未发现超套"].includes(value)) return "success";
   return "neutral";
 }
 
@@ -67,7 +67,7 @@ export default function DecisionSummary({
   const summary = result?.decision_summary || fallbackSummary(customer, complaint);
   const strongCards = [
     {
-      label: "是否超耗",
+      label: "是否超套",
       value: summary.overage.label,
       desc: summary.overage.usage_text || summary.overage.reason,
       tone: toneByValue(summary.overage.label)

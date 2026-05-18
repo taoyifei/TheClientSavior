@@ -1,4 +1,4 @@
-"""FastAPI 请求与响应模型。"""
+﻿"""FastAPI 请求与响应模型。"""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ class TopBusiness(BaseModel):
 
 
 class OverageStatus(BaseModel):
-    """超耗判断结果。"""
+    """超套判断结果。"""
 
     status: str
     label: str
@@ -68,6 +68,7 @@ class CustomerLookupResponse(BaseModel):
     found: bool
     customer: dict[str, object] | None = None
     message: str = ""
+    source: str = "none"
 
 
 class GenerateResponse(BaseModel):

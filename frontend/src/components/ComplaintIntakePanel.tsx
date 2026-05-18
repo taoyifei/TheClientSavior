@@ -1,5 +1,5 @@
-import { Button, Checkbox, Input, InputNumber, Select, Space } from "antd";
-import { ClearOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Input, InputNumber, Select, Space, Tooltip } from "antd";
+import { AudioOutlined, ClearOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import type { CustomerProfile } from "../api/types";
 
 type ComplaintIntakePanelProps = {
@@ -42,7 +42,18 @@ export default function ComplaintIntakePanel({
       </div>
 
       <div className="intake-section">
-        <div className="intake-section-title">客户原话</div>
+        <div className="intake-title-row">
+          <div className="intake-section-title">客户原话</div>
+          <Tooltip title="开发中，敬请期待" placement="top">
+            <Button
+              aria-label="语音输入"
+              className="voice-input-button"
+              icon={<AudioOutlined />}
+              shape="circle"
+              type="text"
+            />
+          </Tooltip>
+        </div>
         <Input.TextArea
           value={complaint}
           rows={7}

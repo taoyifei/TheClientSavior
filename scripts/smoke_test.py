@@ -1,4 +1,4 @@
-"""客户拯救者后端核心冒烟测试。"""
+﻿"""客户拯救者后端核心冒烟测试。"""
 
 from __future__ import annotations
 
@@ -55,11 +55,11 @@ def main() -> None:
         "",
         {"plan_data_gb": 80, "last_month_usage_gb": 96, "overage_fee": 18},
     )
-    _assert(overage["status"] == "是", "超出套餐流量时必须标记为已超耗。")
+    _assert(overage["status"] == "是", "超出套餐流量时必须标记为已超套。")
     suspected_overage = derive_overage_status("月底老是提醒超量", None)
     _assert(
         suspected_overage["status"] == "疑似",
-        "投诉包含超量表达时必须标记为疑似超耗。",
+        "投诉包含超量表达时必须标记为疑似超套。",
     )
     top_business = extract_top_business(None)
     _assert(top_business["title"] == "待生成", "空结果首推业务必须可安全占位。")

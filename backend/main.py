@@ -21,10 +21,12 @@ from backend.schemas import DashboardResponse  # noqa: E402
 from backend.schemas import GenerateRequest  # noqa: E402
 from backend.schemas import GenerateResponse  # noqa: E402
 from backend.services import dashboard_service  # noqa: E402
-from backend.services.customer_service import find_customer_by_phone  # noqa: E402
-from backend.services.customer_service import mask_phone  # noqa: E402
-from backend.services.customer_service import normalize_phone  # noqa: E402
-from backend.services.customer_service import public_customer_view  # noqa: E402
+from backend.services.customer_service import (  # noqa: E402
+    find_customer_by_phone,
+    find_customer_or_history_by_phone,
+    mask_phone,
+    normalize_phone,
+)
 from backend.services.data_service import load_demo_cases  # noqa: E402
 from backend.services.data_service import load_policies  # noqa: E402
 from backend.services.decision_service import build_decision_summary  # noqa: E402
@@ -113,17 +115,35 @@ def lookup_customer(phone: str = Query(default="")) -> CustomerLookupResponse:
     """按手机号查询本地演示客户。"""
 
     normalized_phone = normalize_phone(phone)
-    customer = find_customer_by_phone(normalized_phone)
-    if customer is None:
+    if not normalized_phone:
         return CustomerLookupResponse(
             found=False,
             customer=None,
-            message="未查询到客户画像，可手动补充画像。",
+            message="请输入手机号或继续手动补充画像。",
+            source="none",
         )
+
+    customer_view, source = find_customer_or_history_by_phone(normalized_phone)
+    if source == "static_customer":
+        return CustomerLookupResponse(
+            found=True,
+            customer=customer_view,
+            message="命中本地演示客户画像。",
+            source=source,
+        )
+    if source == "dashboard_history":
+        return CustomerLookupResponse(
+            found=True,
+            customer=customer_view,
+            message="命中本次风险看板处理记录，已回填客户画像。",
+            source=source,
+        )
+
     return CustomerLookupResponse(
-        found=True,
-        customer=public_customer_view(customer),
-        message="命中客户画像。",
+        found=False,
+        customer=None,
+        message="未查询到客户画像，可手动补充画像。",
+        source="none",
     )
 
 

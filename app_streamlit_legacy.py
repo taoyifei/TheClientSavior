@@ -1,4 +1,4 @@
-"""Legacy Streamlit 入口；新版主界面请使用 backend/ + frontend/。"""
+﻿"""Legacy Streamlit 入口；新版主界面请使用 backend/ + frontend/。"""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ HISTORY_VISIBLE_COLUMNS = [
     "手机号",
     "风险等级",
     "跟进优先级",
-    "是否超耗",
+    "是否超套",
     "推荐业务",
     "投诉类型",
     "客户情绪",
@@ -1397,7 +1397,7 @@ def _render_customer_360(customer: dict[str, object] | None) -> None:
         ("网龄", f"{customer.get('tenure_years', 0)} 年", "neutral"),
         ("套餐流量", f"{customer.get('plan_data_gb', '-')}G", "neutral"),
         ("上月用量", f"{customer.get('last_month_usage_gb', '-')}G", "neutral"),
-        ("超耗费用", f"{overage_fee:g} 元", "danger" if overage_fee > 0 else "success"),
+        ("超套费用", f"{overage_fee:g} 元", "danger" if overage_fee > 0 else "success"),
         ("家庭号码数", customer.get("family_mobile_count", 0), "neutral"),
         ("宽带状态", "宽带用户" if customer.get("has_broadband") else "未装宽带", "blue"),
         ("携转意向", "有携转风险" if wants_port_out else "暂无", "danger" if wants_port_out else "success"),
@@ -1446,7 +1446,7 @@ def _render_decision_command_center(
     hero_desc = str(business.get("reason", "输入投诉后自动生成推荐业务。"))
     kpis = [
         _metric_card(
-            "是否超耗",
+            "是否超套",
             overage.get("label", "暂无数据"),
             overage.get("reason", ""),
             _overage_tone(str(overage.get("status", ""))),
@@ -1461,7 +1461,7 @@ def _render_decision_command_center(
         <div class="decision-center">
             <div class="panel-header">
                 <div class="panel-title">AI 决策驾驶舱</div>
-                <div class="panel-subtitle">优先看风险、超耗和首推业务，再执行话术。</div>
+                <div class="panel-subtitle">优先看风险、超套和首推业务，再执行话术。</div>
             </div>
             <div class="decision-hero">
                 <div class="kpi-label">首推业务</div>
@@ -1624,10 +1624,10 @@ def _display_pending(value: str) -> str:
 
 
 def _overage_tone(status: str) -> str:
-    """按超耗状态返回色彩语义。
+    """按超套状态返回色彩语义。
 
     Args:
-        status: 超耗状态。
+        status: 超套状态。
 
     Returns:
         色彩语义。
@@ -2483,7 +2483,7 @@ def _derive_overage_status(
     customer: dict[str, object] | None,
     result: AgentResult | None = None,
 ) -> dict[str, object]:
-    """推导客户是否超耗，手机号和客户数据仅用于本地演示。
+    """推导客户是否超套，手机号和客户数据仅用于本地演示。
 
     Args:
         complaint: 客户投诉原文。
@@ -2491,11 +2491,11 @@ def _derive_overage_status(
         result: 智能体结果，当前仅保留接口兼容。
 
     Returns:
-        超耗状态、展示标签、原因、用量和费用文本。
+        超套状态、展示标签、原因、用量和费用文本。
     """
 
     del result
-    keywords = ("超量", "超耗", "流量不够", "月底提醒", "扣费", "流量费")
+    keywords = ("超量", "超套", "流量不够", "月底提醒", "扣费", "流量费")
     complaint_text = str(complaint)
     has_keyword = any(keyword in complaint_text for keyword in keywords)
     plan_data = _as_float((customer or {}).get("plan_data_gb"))
@@ -2504,26 +2504,26 @@ def _derive_overage_status(
 
     status = "未知"
     usage_text = "暂无用量数据"
-    fee_text = "暂无超耗费用"
+    fee_text = "暂无超套费用"
     reason = "暂无用量数据，需查询系统详单。"
     if plan_data is not None and usage_data is not None:
         usage_text = f"上月{usage_data:g}G / 套餐{plan_data:g}G"
         if usage_data > plan_data:
             status = "是"
-            reason = "上月使用量已超过套餐内流量，建议优先核查超耗费用。"
+            reason = "上月使用量已超过套餐内流量，建议优先核查超套费用。"
         else:
             status = "否"
             reason = "本地演示用量未超过套餐内流量。"
     if fee_value is not None and fee_value > 0:
-        fee_text = f"超耗费用{fee_value:g}元"
+        fee_text = f"超套费用{fee_value:g}元"
     if has_keyword and status != "是":
         status = "疑似"
         reason = "投诉内容出现流量或扣费相关表达，建议优先核查详单。"
 
     label = {
-        "是": "已超耗",
-        "疑似": "疑似超耗",
-        "否": "未发现超耗",
+        "是": "已超套",
+        "疑似": "疑似超套",
+        "否": "未发现超套",
         "未知": "暂无数据",
     }.get(status, "暂无数据")
     return {
@@ -2631,7 +2631,7 @@ def _render_decision_summary_panel(
     overage_status = str(overage.get("status", "未知"))
     cards = [
         {
-            "label": "是否超耗",
+            "label": "是否超套",
             "value": str(overage.get("label", "暂无数据")),
             "desc": (
                 f"{overage.get('usage_text', '')}｜"
@@ -2757,10 +2757,10 @@ def _render_top_business_card(result: AgentResult | None) -> None:
 
 
 def _overage_card_class(status: str) -> str:
-    """根据超耗状态选择卡片样式。
+    """根据超套状态选择卡片样式。
 
     Args:
-        status: 超耗状态。
+        status: 超套状态。
 
     Returns:
         CSS 类名。
@@ -2846,7 +2846,7 @@ def _customer_tags(
 
     Args:
         customer: 本地客户画像。
-        overage_status: 超耗判断结果。
+        overage_status: 超套判断结果。
 
     Returns:
         客户标签列表。
@@ -2862,7 +2862,7 @@ def _customer_tags(
     if wants_port_out:
         tags.append("携转风险")
     if overage_status and overage_status.get("status") in {"是", "疑似"}:
-        tags.append("流量超耗")
+        tags.append("流量超套")
     family_count = _as_float(
         source.get("family_mobile_count", st.session_state.get("family_mobile_count_input"))
     )
@@ -3078,7 +3078,7 @@ def build_result_markdown(result: AgentResult) -> str:
         "",
         "## 客户决策摘要",
         f"- 手机号：{masked_phone}",
-        f"- 是否超耗：{overage.get('label', '暂无数据')}",
+        f"- 是否超套：{overage.get('label', '暂无数据')}",
         f"- 推荐业务：{business.get('title', '待生成')}",
         f"- 风险等级：{decision.get('risk_level', '中')}",
         f"- 投诉类型：{decision.get('complaint_type', '其他')}",
@@ -3154,7 +3154,7 @@ def _render_dashboard_page() -> None:
             _metric_card("平均耗时", f"{average_elapsed:.2f} 秒", "本次演示平均", "neutral"),
         ]
     )
-    _section_header("后台客户风险看板", "按风险、超耗、携转意向组织客户跟进队列。")
+    _section_header("后台客户风险看板", "按风险、超套、携转意向组织客户跟进队列。")
     st.markdown(f'<div class="decision-kpi-grid">{kpi_html}</div>', unsafe_allow_html=True)
     _render_high_risk_cards(sorted_history)
 
@@ -3391,7 +3391,7 @@ def _update_dashboard(
             "风险排序": risk_sort_value,
             "客户情绪": emotion,
             "关键诉求": key_needs_text,
-            "是否超耗": overage_status.get("label", "暂无数据"),
+            "是否超套": overage_status.get("label", "暂无数据"),
             "推荐业务": top_business_title,
             "客户价值": customer_value,
             "客户标签": customer_tags,
@@ -3676,7 +3676,7 @@ def _render_high_risk_cards(rows: list[dict[str, object]]) -> None:
                         状态：{html.escape(str(row.get("处理状态", "")))}
                     </div>
                     <div class="policy-meta">
-                        是否超耗：{html.escape(str(row.get("是否超耗", "")))}
+                        是否超套：{html.escape(str(row.get("是否超套", "")))}
                     </div>
                     <p>推荐业务：{html.escape(str(row.get("推荐业务", "")))}</p>
                     <p>投诉摘要：{html.escape(summary)}</p>

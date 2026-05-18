@@ -1,4 +1,4 @@
-import { Button, message, Spin } from "antd";
+﻿import { Button, message, Spin } from "antd";
 import { DownloadOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { generatePlan, getErrorMessage, lookupCustomer, testLLM } from "../api/client";
@@ -38,9 +38,8 @@ function normalizePhone(value: string) {
   return value.replace(/\s+/g, "").replace(/-/g, "").trim();
 }
 
-function isValidPhone(value: string) {
-  const normalized = normalizePhone(value);
-  return normalized === "" || /^\d{11}$/.test(normalized);
+function isStrictPhone(value: string) {
+  return /^\d{11}$/.test(normalizePhone(value));
 }
 
 function profileFromCustomer(customer: Customer): CustomerProfile {
@@ -62,7 +61,7 @@ function buildMarkdown(result: AgentResult, phoneMasked: string) {
     "",
     "## 客户决策摘要",
     `- 手机号：${phoneMasked || "未填写"}`,
-    `- 是否超耗：${summary?.overage.label || "待分析"}`,
+    `- 是否超套：${summary?.overage.label || "待分析"}`,
     `- 推荐业务：${summary?.top_business.title || "待生成"}`,
     `- 风险等级：${summary?.risk_level || result.customer_analysis.risk_level || ""}`,
     `- 投诉类型：${summary?.complaint_type || result.customer_analysis.complaint_type || ""}`,
@@ -112,7 +111,7 @@ export default function WorkbenchPage({
 
   const doLookup = async (targetPhone = phone) => {
     const normalizedPhone = normalizePhone(targetPhone);
-    if (!isValidPhone(targetPhone)) {
+    if (normalizedPhone && !isStrictPhone(normalizedPhone)) {
       message.warning("手机号格式不正确，请输入 11 位手机号；也可以留空继续演示。");
       return undefined;
     }
@@ -129,6 +128,13 @@ export default function WorkbenchPage({
       if (response.found && response.customer) {
         setCustomer(response.customer);
         setProfile(profileFromCustomer(response.customer));
+        if (response.source === "dashboard_history") {
+          setLookupStatus("命中本次风险看板处理记录，已回填客户画像。");
+          message.success("已从本次看板记录回填客户画像");
+        } else if (response.source === "static_customer") {
+          setLookupStatus("命中本地演示客户画像。");
+          message.success("命中本地演示客户画像");
+        }
       } else {
         setCustomer(null);
       }
@@ -161,7 +167,7 @@ export default function WorkbenchPage({
 
   const handleGenerate = async () => {
     const normalizedPhone = normalizePhone(phone);
-    if (!isValidPhone(phone)) {
+    if (normalizedPhone && !isStrictPhone(normalizedPhone)) {
       message.warning("手机号格式不正确，请输入 11 位手机号；也可以留空继续演示。");
       return;
     }

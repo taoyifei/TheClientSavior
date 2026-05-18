@@ -6,11 +6,17 @@ type DemoCaseBarProps = {
   onSelect: (demoCase: DemoCase) => void;
 };
 
+const HIDDEN_SCENE_KEYWORDS = ["宽带", "WiFi", "商户"];
+
 export default function DemoCaseBar({ demoCases, onSelect }: DemoCaseBarProps) {
+  const visibleCases = demoCases.filter(
+    (demoCase) => !HIDDEN_SCENE_KEYWORDS.some((keyword) => demoCase.name.includes(keyword))
+  );
+
   return (
     <div className="demo-chip-row">
-      <span className="demo-label">演示号码</span>
-      {demoCases.map((demoCase) => (
+      <span className="demo-label">热门场景</span>
+      {visibleCases.map((demoCase) => (
         <Button
           key={demoCase.name}
           className="demo-chip"

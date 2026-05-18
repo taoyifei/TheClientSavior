@@ -66,7 +66,37 @@ def public_customer_view(customer: dict[str, object]) -> dict[str, object]:
     public_view = dict(customer)
     public_view.pop("phone", None)
     public_view["phone_masked"] = mask_phone(normalize_phone(customer.get("phone")))
+    public_view["source"] = "static_customer"
     return public_view
+
+
+def find_customer_or_history_by_phone(
+    phone: str,
+) -> tuple[dict[str, object] | None, str]:
+    """先查静态客户，再查本次风险看板历史。
+
+    Args:
+        phone: 原始或标准化手机号。
+
+    Returns:
+        客户视图和来源标记。
+    """
+
+    normalized = normalize_phone(phone)
+    customer = find_customer_by_phone(normalized)
+    if customer is not None:
+        return public_customer_view(customer), "static_customer"
+
+    # 局部导入避免 customer_service 与 dashboard_service 形成循环依赖。
+    from backend.services import dashboard_service  # pylint: disable=import-outside-toplevel
+
+    record = dashboard_service.find_latest_record_by_phone(normalized)
+    if record is not None:
+        return (
+            dashboard_service.build_customer_view_from_record(record),
+            "dashboard_history",
+        )
+    return None, "none"
 
 
 def apply_customer_to_profile(customer: dict[str, object]) -> dict[str, object]:

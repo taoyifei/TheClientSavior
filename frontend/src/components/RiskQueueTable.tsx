@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Button, Input, Select, Space, Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { exportDashboardCsvUrl } from "../api/client";
@@ -12,11 +12,11 @@ const ALL = "全部";
 
 const COLUMNS: ColumnsType<DashboardRecord> = [
   { title: "序号", dataIndex: "sequence", width: 90 },
-  { title: "生成时间", dataIndex: "generated_at", width: 110 },
+  { title: "生成时间", dataIndex: "generated_at", width: 180 },
   { title: "手机号", dataIndex: "phone_masked", width: 130 },
   { title: "风险等级", dataIndex: "risk_level", width: 110 },
   { title: "跟进优先级", dataIndex: "follow_priority", width: 120 },
-  { title: "是否超耗", dataIndex: "overage_label", width: 120 },
+  { title: "是否超套", dataIndex: "overage_label", width: 120 },
   { title: "推荐业务", dataIndex: "top_business", width: 220 },
   { title: "投诉类型", dataIndex: "complaint_type", width: 140 },
   { title: "客户情绪", dataIndex: "emotion", width: 120 },

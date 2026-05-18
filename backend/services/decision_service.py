@@ -1,4 +1,4 @@
-"""客户决策摘要与标签服务。"""
+﻿"""客户决策摘要与标签服务。"""
 
 from __future__ import annotations
 
@@ -11,17 +11,17 @@ def derive_overage_status(
     complaint: str,
     customer: dict[str, object] | None,
 ) -> dict[str, object]:
-    """推导是否超耗。
+    """推导是否超套。
 
     Args:
         complaint: 客户投诉原文。
         customer: 本地客户画像。
 
     Returns:
-        超耗状态结构。
+        超套状态结构。
     """
 
-    keywords = ("超量", "超耗", "流量不够", "月底提醒", "扣费", "流量费")
+    keywords = ("超量", "超套", "流量不够", "月底提醒", "扣费", "流量费")
     complaint_text = str(complaint)
     has_keyword = any(keyword in complaint_text for keyword in keywords)
     source = customer or {}
@@ -31,26 +31,26 @@ def derive_overage_status(
 
     status = "未知"
     usage_text = "暂无用量数据"
-    fee_text = "暂无超耗费用"
+    fee_text = "暂无超套费用"
     reason = "暂无用量数据，需查询系统详单。"
     if plan_data is not None and usage_data is not None:
         usage_text = f"上月{usage_data:g}G / 套餐{plan_data:g}G"
         if usage_data > plan_data:
             status = "是"
-            reason = "上月使用量已超过套餐内流量，建议优先核查超耗费用。"
+            reason = "上月使用量已超过套餐内流量，建议优先核查超套费用。"
         else:
             status = "否"
             reason = "本地演示用量未超过套餐内流量。"
     if fee_value is not None and fee_value > 0:
-        fee_text = f"超耗费用{fee_value:g}元"
+        fee_text = f"超套费用{fee_value:g}元"
     if has_keyword and status != "是":
         status = "疑似"
         reason = "投诉内容出现流量或扣费相关表达，建议优先核查详单。"
 
     label = {
-        "是": "已超耗",
-        "疑似": "疑似超耗",
-        "否": "未发现超耗",
+        "是": "已超套",
+        "疑似": "疑似超套",
+        "否": "未发现超套",
         "未知": "暂无数据",
     }.get(status, "暂无数据")
     return {
@@ -165,7 +165,7 @@ def customer_tags(
     Args:
         customer: 本地客户画像。
         profile: 生成接口画像。
-        overage_status: 超耗判断结构。
+        overage_status: 超套判断结构。
 
     Returns:
         最多三个客户标签。
@@ -178,7 +178,7 @@ def customer_tags(
     if bool(source.get("wants_port_out", False)):
         tags.append("携转风险")
     if overage_status.get("status") in {"是", "疑似"}:
-        tags.append("流量超耗")
+        tags.append("流量超套")
     family_count = _as_float(source.get("family_mobile_count")) or 0
     if family_count >= 2:
         tags.append("家庭融合")
