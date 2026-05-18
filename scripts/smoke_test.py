@@ -1,8 +1,7 @@
-"""客户拯救者冒烟测试脚本。"""
+﻿"""客户拯救者后端核心冒烟测试。"""
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -12,69 +11,64 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 import src.agent as agent_module
-from app import _derive_overage_status
-from app import _extract_top_business
-from app import _mask_phone
-from app import _normalize_phone
-from app import _risk_score
+from backend.services import dashboard_service
+from backend.services.customer_service import mask_phone
+from backend.services.customer_service import normalize_phone
+from backend.services.data_service import load_customers
+from backend.services.data_service import load_demo_cases
+from backend.services.data_service import load_policies
+from backend.services.decision_service import build_decision_summary
+from backend.services.decision_service import derive_overage_status
+from backend.services.decision_service import extract_top_business
+from backend.services.decision_service import risk_score
 from src.matcher import match_policies
 from src.models import CustomerProfile
 
-DATA_DIR = ROOT_DIR / "data"
-
 
 def main() -> None:
-    """执行不依赖 Streamlit 启动的基础冒烟测试。
+    """执行不依赖页面启动的基础冒烟测试。"""
 
-    Args:
-        无参数。
-
-    Returns:
-        无返回值。
-    """
-
-    policies = _load_json_list(DATA_DIR / "policies.json")
-    demo_cases = _load_json_list(DATA_DIR / "demo_cases.json")
-    customers = _load_json_list(DATA_DIR / "customers.json")
+    policies = load_policies()
+    demo_cases = load_demo_cases()
+    customers = load_customers()
     _assert(len(policies) >= 12, "policies.json 至少需要 12 条政策。")
     _assert(len(demo_cases) >= 6, "demo_cases.json 至少需要 6 条案例。")
     _assert(len(customers) >= 6, "customers.json 至少需要 6 条演示客户。")
     _assert(
-        _normalize_phone("138-0013-8000") == "13800138000",
-        "手机号标准化必须去掉短横线。",
-    )
-    _assert(
-        _mask_phone("13800138000") == "138****8000",
-        "手机号脱敏格式不正确。",
-    )
-    _assert(
-        _risk_score("高") > _risk_score("中") > _risk_score("低"),
-        "风险排序必须满足高大于中大于低。",
-    )
-    overage = _derive_overage_status(
-        "",
-        {"plan_data_gb": 80, "last_month_usage_gb": 96, "overage_fee": 18},
-    )
-    _assert(overage["status"] == "是", "已超出套餐流量时必须标记为已超耗。")
-    suspected_overage = _derive_overage_status("月底老是提醒超量", None)
-    _assert(
-        suspected_overage["status"] == "疑似",
-        "投诉包含超量表达时必须标记为疑似超耗。",
-    )
-    top_business = _extract_top_business(None)
-    _assert(top_business["title"] == "待生成", "空结果首推业务必须可安全占位。")
-    _assert(
         all(bool(case.get("phone")) for case in demo_cases),
         "所有演示案例都需要包含 phone 字段。",
     )
+    _assert(
+        normalize_phone("138-0013-8000") == "13800138000",
+        "手机号标准化必须去掉短横线和空格。",
+    )
+    _assert(
+        mask_phone("13800138000") == "138****8000",
+        "手机号脱敏格式不正确。",
+    )
+    _assert(
+        risk_score("高") > risk_score("中") > risk_score("低"),
+        "风险排序必须满足高大于中大于低。",
+    )
+
+    overage = derive_overage_status(
+        "",
+        {"plan_data_gb": 80, "last_month_usage_gb": 96, "overage_fee": 18},
+    )
+    _assert(overage["status"] == "是", "超出套餐流量时必须标记为已超套。")
+    suspected_overage = derive_overage_status("月底老是提醒超量", None)
+    _assert(
+        suspected_overage["status"] == "疑似",
+        "投诉包含超量表达时必须标记为疑似超套。",
+    )
+    top_business = extract_top_business(None)
+    _assert(top_business["title"] == "待生成", "空结果首推业务必须可安全占位。")
 
     first_case = demo_cases[0]
-    _assert(bool(first_case.get("phone")), "演示案例需要包含 phone 字段。")
     profile_data = first_case.get("profile", {})
     _assert(isinstance(profile_data, dict), "演示案例 profile 必须是对象。")
     profile = CustomerProfile(**profile_data)
     complaint = str(first_case.get("complaint", ""))
-
     matches = match_policies(complaint, profile, policies, top_k=5)
     _assert(len(matches) == 5, "match_policies 必须返回 Top 5。")
 
@@ -89,6 +83,23 @@ def main() -> None:
     _assert(bool(result.recommended_policies), "结果必须包含 recommended_policies。")
     _assert(bool(result.retention_script), "结果必须包含 retention_script。")
     _assert(bool(result.internal_notes), "结果必须包含 internal_notes。")
+
+    decision_summary = build_decision_summary(
+        result=result,
+        complaint=complaint,
+        customer=customers[0],
+        profile=profile_data,
+    )
+    _assert(
+        bool(decision_summary["top_business"]["title"]),
+        "决策摘要必须包含推荐业务。",
+    )
+    _assert_dashboard_export_masks_phone(
+        result=result,
+        complaint=complaint,
+        profile_data=profile_data,
+        decision_summary=decision_summary,
+    )
 
     mock_case = demo_cases[1]
     mock_profile_data = mock_case.get("profile", {})
@@ -108,16 +119,7 @@ def _run_mock_llm_success_test(
     complaint: str,
     profile: CustomerProfile,
 ) -> None:
-    """验证 mock LLM 成功链路和中文排序解析。
-
-    Args:
-        policies: 政策卡列表。
-        complaint: 客户投诉原文。
-        profile: 客户画像。
-
-    Returns:
-        无返回值。
-    """
+    """验证 mock LLM 成功链路和中文排序解析。"""
 
     original_is_llm_configured = agent_module.is_llm_configured
     original_generate_with_llm = agent_module.generate_with_llm
@@ -158,16 +160,7 @@ def _fake_generate_with_llm(
     profile: dict[str, object],
     candidate_policies: list[dict[str, object]],
 ) -> dict[str, object]:
-    """返回固定 mock LLM 结果。
-
-    Args:
-        complaint: 客户投诉原文。
-        profile: 客户画像字典。
-        candidate_policies: 候选政策列表。
-
-    Returns:
-        与真实 LLM 函数一致的响应结构。
-    """
+    """返回固定 mock LLM 结果。"""
 
     del complaint, profile, candidate_policies
     return {
@@ -201,49 +194,37 @@ def _fake_generate_with_llm(
     }
 
 
-def _load_json_list(path: Path) -> list[dict[str, object]]:
-    """读取 JSON 数组文件。
+def _assert_dashboard_export_masks_phone(
+    result: object,
+    complaint: str,
+    profile_data: dict[str, object],
+    decision_summary: dict[str, object],
+) -> None:
+    """验证看板和 CSV 导出不会暴露完整手机号。"""
 
-    Args:
-        path: JSON 文件路径。
-
-    Returns:
-        JSON 对象列表。
-    """
-
-    with path.open("r", encoding="utf-8") as file:
-        data = json.load(file)
-    _assert(isinstance(data, list), f"{path.name} 必须是 JSON 数组。")
-    return data
+    dashboard_service.reset_dashboard()
+    dashboard_service.add_record(
+        result=result,
+        phone="13800138001",
+        phone_masked="138****8001",
+        complaint=complaint,
+        profile=profile_data,
+        decision_summary=decision_summary,
+    )
+    csv_text = dashboard_service.export_csv().decode("utf-8-sig")
+    _assert("13800138001" not in csv_text, "CSV 不能包含完整 11 位手机号。")
+    _assert("138****8001" in csv_text, "CSV 必须包含脱敏手机号。")
 
 
 def _clear_api_keys() -> None:
-    """清除当前进程中的 API Key，验证本地兜底。
-
-    Args:
-        无参数。
-
-    Returns:
-        无返回值。
-    """
+    """清除当前进程中的 API Key，验证本地兜底。"""
 
     os.environ["DASHSCOPE_API_KEY"] = ""
     os.environ["OPENAI_API_KEY"] = ""
 
 
 def _assert(condition: bool, message: str) -> None:
-    """抛出带中文信息的断言错误。
-
-    Args:
-        condition: 断言条件。
-        message: 失败信息。
-
-    Returns:
-        无返回值。
-
-    Raises:
-        AssertionError: 条件不满足时抛出。
-    """
+    """抛出带中文信息的断言错误。"""
 
     if not condition:
         raise AssertionError(message)

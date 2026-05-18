@@ -3383,7 +3383,7 @@ def _update_dashboard(
     st.session_state["history"].append(
         {
             "序号": st.session_state["total_cases"],
-            "生成时间": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "生成时间": datetime.now().strftime("%H:%M:%S"),
             "手机号": masked_phone,
             "_raw_phone": phone,
             "投诉类型": complaint_type,

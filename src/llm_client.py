@@ -29,6 +29,7 @@ DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 DEFAULT_MODEL = "qwen-flash"
 DEFAULT_TIMEOUT = 6.0
 DEFAULT_MAX_TOKENS = 800
+DEFAULT_MAX_RETRIES = 0
 DEFAULT_TEMPERATURE = 0.2
 SYSTEM_PROMPT = """你是中国移动一线投诉挽留专家，也是一个严谨的 AI 助手。
 你的任务是根据客户投诉、客户画像和候选政策，生成可执行的挽留方案。
@@ -74,6 +75,7 @@ def get_llm_settings() -> dict[str, object]:
         "model": os.getenv("LLM_MODEL", DEFAULT_MODEL),
         "timeout": _read_float_env("LLM_TIMEOUT", DEFAULT_TIMEOUT),
         "max_tokens": _read_int_env("LLM_MAX_TOKENS", DEFAULT_MAX_TOKENS),
+        "max_retries": _read_int_env("LLM_MAX_RETRIES", DEFAULT_MAX_RETRIES),
     }
 
 
@@ -311,6 +313,7 @@ def _build_openai_client(settings: dict[str, object]) -> object:
         api_key=str(settings["api_key"]),
         base_url=str(settings["base_url"]),
         timeout=float(settings["timeout"]),
+        max_retries=int(settings["max_retries"]),
     )
 
 
